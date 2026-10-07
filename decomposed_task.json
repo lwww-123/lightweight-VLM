@@ -1,0 +1,21 @@
+{
+    "original_task": "\n Before closing the drawer, put the mug on the plate and the bowl in the basket.\n",
+    "subtasks": [
+        {
+            "id": 1,
+            "order": 1,
+            "action_type": "pick_and_place_on",
+            "object": "mug",
+            "target": "plate",
+            "instruction": "Pick up the mug and place it on the plate."
+        },
+        {
+            "id": 2,
+            "order": 2,
+            "action_type": "pick_and_place_in",
+            "object": "bowl",
+            "target": "basket",
+            "instruction": "Pick up the bowl and place it in the basket."
+        }
+    ]
+}
