@@ -1,4 +1,4 @@
 Now we try Qwen API
-'''bash
+```bash
 export DASHSCOPE_API_KEY="API_KEY"
-'''
+```
