@@ -1,13 +1,13 @@
 """Regression evaluation of the v2 (pick / place_on / place_in / open / close)
-action schema on the L1-L10 test set.
+action schema on the L1-L10 test set or the unseen stress set.
 
 The expected plan for each case is parsed from the fine-grained "expected"
-strings already in baseline_eval.TEST_SET, so no new ground truth is written.
-Results go to schema_v2_results.json (or --out); existing result files and
-baseline_results.json are never overwritten.
+strings in baseline_eval.TEST_SET (suite L) or stress_tests.STRESS_SET
+(suite stress). Results go to schema_v2_results.json (or --out); existing
+result files and baseline_results.json are never overwritten.
 
 Usage (from repo root):
-    python eval/schema_v2_eval.py [--runs N] [--out FILE.json]
+    python eval/schema_v2_eval.py [--suite L|stress] [--runs N] [--out FILE.json]
 """
 
 import argparse
@@ -21,6 +21,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from task_decomposer import TaskDecomposer  # noqa: E402
 from baseline_eval import TEST_SET, norm, to_triples  # noqa: E402
+from stress_tests import STRESS_SET  # noqa: E402
+
+SUITES = {"L": TEST_SET, "stress": STRESS_SET}
 
 
 def parse_expected(step):
@@ -42,7 +45,7 @@ def parse_expected(step):
     raise ValueError(f"cannot parse expected step: {step!r}")
 
 
-def run(num_runs, out_name):
+def run(num_runs, out_name, suite):
     # Committed results are kept as a record; a rerun must name a new file.
     out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), out_name)
     if os.path.exists(out_path):
@@ -65,12 +68,13 @@ def run(num_runs, out_name):
 
     records = []
     for run_idx in range(num_runs):
-        for case in TEST_SET:
+        for case in SUITES[suite]:
             captured.clear()
             expected = [parse_expected(s) for s in case["expected"]]
             record = {
                 "run": run_idx + 1,
                 "id": case["id"],
+                "category": case.get("category"),
                 "input": case["input"],
                 "expected_fine": [list(t) for t in expected],
                 "raw_output": None,
@@ -106,6 +110,7 @@ def run(num_runs, out_name):
     out = {
         "model": decomposer.model,
         "temperature": 0,
+        "suite": suite,
         "runs": num_runs,
         "timestamp": datetime.now().isoformat(timespec="seconds"),
         "system_prompt": decomposer.system_prompt,
@@ -127,7 +132,8 @@ def run(num_runs, out_name):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--suite", choices=sorted(SUITES), default="L")
     parser.add_argument("--runs", type=int, default=1)
     parser.add_argument("--out", default="schema_v2_results.json")
     args = parser.parse_args()
-    run(args.runs, args.out)
+    run(args.runs, args.out, args.suite)

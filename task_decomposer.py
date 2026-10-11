@@ -67,14 +67,13 @@ Rules:
 
 Example:
 
-Instruction: Pick up the bowl, open the cabinet, put the bowl inside, and close the cabinet.
+Instruction: Open the oven, then put the towel on the rack.
 
 {
     "subtasks": [
-        {"id": 1, "action_type": "pick", "object": "bowl", "target": null, "order": 1},
-        {"id": 2, "action_type": "open", "object": null, "target": "cabinet", "order": 2},
-        {"id": 3, "action_type": "place_in", "object": "bowl", "target": "cabinet", "order": 3},
-        {"id": 4, "action_type": "close", "object": null, "target": "cabinet", "order": 4}
+        {"id": 1, "action_type": "open", "object": null, "target": "oven", "order": 1},
+        {"id": 2, "action_type": "pick", "object": "towel", "target": null, "order": 2},
+        {"id": 3, "action_type": "place_on", "object": "towel", "target": "rack", "order": 3}
     ]
 }
 """

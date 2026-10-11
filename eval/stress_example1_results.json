@@ -1,0 +1,2818 @@
+{
+  "model": "qwen-plus",
+  "temperature": 0,
+  "suite": "stress",
+  "runs": 3,
+  "timestamp": "2026-10-11T21:58:36",
+  "system_prompt": "\nYou are a task decomposition module for a robot manipulation system.\n\nYour task is to decompose a high-level manipulation instruction\ninto a sequence of executable manipulation subtasks.\n\nThe robot has a single gripper and can hold at most one object at a time.\n\nOnly use the following five action types:\n\n1. pick\n   Pick up an object and keep holding it.\n   object: the object. target: null.\n\n2. place_on\n   Place the object currently held on a target surface.\n   object: the held object. target: the surface.\n\n3. place_in\n   Place the object currently held inside a container.\n   object: the held object. target: the container.\n\n4. open\n   Open a container or appliance.\n   object: null. target: the container or appliance.\n\n5. close\n   Close a container or appliance.\n   object: null. target: the container or appliance.\n\nRules:\n\n1. Output subtasks in the order they are physically executed.\n   Resolve temporal words such as \"before\", \"after\", \"once\", \"then\"\n   and \"only after\" into the real execution order. When the instruction\n   already lists actions in execution order, keep that order exactly.\n2. Picking up and placing an object are separate subtasks. Never merge them.\n3. Verbs such as \"put\", \"move\" or \"place X into Y\" mean pick followed by\n   place_on or place_in.\n4. Every place_on / place_in must come after a pick of the same object,\n   with no other pick in between. If the instruction places an object\n   without mentioning picking it up, insert the pick immediately before\n   that place.\n5. Do not pick a second object while still holding one, and do not leave\n   an object in the gripper at the end of the plan.\n6. Resolve words such as \"it\", \"inside\" and \"there\" to the concrete\n   object or target name.\n7. Do not invent objects or targets, and do not add actions that the\n   instruction does not require. The implicit pick in rule 4 is required.\n8. Return only valid JSON.\n\nExample:\n\nInstruction: Pick up the bowl, open the cabinet, put the bowl inside, and close the cabinet.\n\n{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"bowl\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"open\", \"object\": null, \"target\": \"cabinet\", \"order\": 2},\n        {\"id\": 3, \"action_type\": \"place_in\", \"object\": \"bowl\", \"target\": \"cabinet\", \"order\": 3},\n        {\"id\": 4, \"action_type\": \"close\", \"object\": null, \"target\": \"cabinet\", \"order\": 4}\n    ]\n}\n",
+  "results": [
+    {
+      "run": 1,
+      "id": "S1",
+      "category": "new object/container",
+      "input": "Put the apple in the bowl.",
+      "expected_fine": [
+        [
+          "pick",
+          "apple",
+          null
+        ],
+        [
+          "place_in",
+          "apple",
+          "bowl"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"apple\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"place_in\", \"object\": \"apple\", \"target\": \"bowl\", \"order\": 2}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "apple",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "place_in",
+          "object": "apple",
+          "target": "bowl",
+          "order": 2
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "apple",
+          null
+        ],
+        [
+          "place_in",
+          "apple",
+          "bowl"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the apple.",
+        "Place the apple in the bowl."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 1,
+      "id": "S2",
+      "category": "new object/container",
+      "input": "Place the mug on the stove.",
+      "expected_fine": [
+        [
+          "pick",
+          "mug",
+          null
+        ],
+        [
+          "place_on",
+          "mug",
+          "stove"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"mug\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"place_on\", \"object\": \"mug\", \"target\": \"stove\", \"order\": 2}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "mug",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "place_on",
+          "object": "mug",
+          "target": "stove",
+          "order": 2
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "mug",
+          null
+        ],
+        [
+          "place_on",
+          "mug",
+          "stove"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the mug.",
+        "Place the mug on the stove."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 1,
+      "id": "S3",
+      "category": "temporal",
+      "input": "After opening the microwave, put the mug inside.",
+      "expected_fine": [
+        [
+          "open",
+          null,
+          "microwave"
+        ],
+        [
+          "pick",
+          "mug",
+          null
+        ],
+        [
+          "place_in",
+          "mug",
+          "microwave"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"open\", \"object\": null, \"target\": \"microwave\", \"order\": 1},\n        {\"id\": 2, \"action_type\": \"pick\", \"object\": \"mug\", \"target\": null, \"order\": 2},\n        {\"id\": 3, \"action_type\": \"place_in\", \"object\": \"mug\", \"target\": \"microwave\", \"order\": 3}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "open",
+          "object": null,
+          "target": "microwave",
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "pick",
+          "object": "mug",
+          "target": null,
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "place_in",
+          "object": "mug",
+          "target": "microwave",
+          "order": 3
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "open",
+          null,
+          "microwave"
+        ],
+        [
+          "pick",
+          "mug",
+          null
+        ],
+        [
+          "place_in",
+          "mug",
+          "microwave"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Open the microwave.",
+        "Pick up the mug.",
+        "Place the mug in the microwave."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 1,
+      "id": "S4",
+      "category": "temporal",
+      "input": "Before putting the cream cheese in the basket, put the bowl on the plate.",
+      "expected_fine": [
+        [
+          "pick",
+          "bowl",
+          null
+        ],
+        [
+          "place_on",
+          "bowl",
+          "plate"
+        ],
+        [
+          "pick",
+          "cream cheese",
+          null
+        ],
+        [
+          "place_in",
+          "cream cheese",
+          "basket"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"bowl\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"place_on\", \"object\": \"bowl\", \"target\": \"plate\", \"order\": 2},\n        {\"id\": 3, \"action_type\": \"pick\", \"object\": \"cream cheese\", \"target\": null, \"order\": 3},\n        {\"id\": 4, \"action_type\": \"place_in\", \"object\": \"cream cheese\", \"target\": \"basket\", \"order\": 4}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "bowl",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "place_on",
+          "object": "bowl",
+          "target": "plate",
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "pick",
+          "object": "cream cheese",
+          "target": null,
+          "order": 3
+        },
+        {
+          "id": 4,
+          "action_type": "place_in",
+          "object": "cream cheese",
+          "target": "basket",
+          "order": 4
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "bowl",
+          null
+        ],
+        [
+          "place_on",
+          "bowl",
+          "plate"
+        ],
+        [
+          "pick",
+          "cream cheese",
+          null
+        ],
+        [
+          "place_in",
+          "cream cheese",
+          "basket"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the bowl.",
+        "Place the bowl on the plate.",
+        "Pick up the cream cheese.",
+        "Place the cream cheese in the basket."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 1,
+      "id": "S5",
+      "category": "temporal",
+      "input": "Put the mug on the table after you put the bowl in the sink.",
+      "expected_fine": [
+        [
+          "pick",
+          "bowl",
+          null
+        ],
+        [
+          "place_in",
+          "bowl",
+          "sink"
+        ],
+        [
+          "pick",
+          "mug",
+          null
+        ],
+        [
+          "place_on",
+          "mug",
+          "table"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"bowl\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"place_in\", \"object\": \"bowl\", \"target\": \"sink\", \"order\": 2},\n        {\"id\": 3, \"action_type\": \"pick\", \"object\": \"mug\", \"target\": null, \"order\": 3},\n        {\"id\": 4, \"action_type\": \"place_on\", \"object\": \"mug\", \"target\": \"table\", \"order\": 4}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "bowl",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "place_in",
+          "object": "bowl",
+          "target": "sink",
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "pick",
+          "object": "mug",
+          "target": null,
+          "order": 3
+        },
+        {
+          "id": 4,
+          "action_type": "place_on",
+          "object": "mug",
+          "target": "table",
+          "order": 4
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "bowl",
+          null
+        ],
+        [
+          "place_in",
+          "bowl",
+          "sink"
+        ],
+        [
+          "pick",
+          "mug",
+          null
+        ],
+        [
+          "place_on",
+          "mug",
+          "table"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the bowl.",
+        "Place the bowl in the sink.",
+        "Pick up the mug.",
+        "Place the mug on the table."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 1,
+      "id": "S6",
+      "category": "temporal",
+      "input": "Close the cabinet only after you have put the spoon on the shelf.",
+      "expected_fine": [
+        [
+          "pick",
+          "spoon",
+          null
+        ],
+        [
+          "place_on",
+          "spoon",
+          "shelf"
+        ],
+        [
+          "close",
+          null,
+          "cabinet"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"spoon\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"place_on\", \"object\": \"spoon\", \"target\": \"shelf\", \"order\": 2},\n        {\"id\": 3, \"action_type\": \"close\", \"object\": null, \"target\": \"cabinet\", \"order\": 3}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "spoon",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "place_on",
+          "object": "spoon",
+          "target": "shelf",
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "close",
+          "object": null,
+          "target": "cabinet",
+          "order": 3
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "spoon",
+          null
+        ],
+        [
+          "place_on",
+          "spoon",
+          "shelf"
+        ],
+        [
+          "close",
+          null,
+          "cabinet"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the spoon.",
+        "Place the spoon on the shelf.",
+        "Close the cabinet."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 1,
+      "id": "S7",
+      "category": "temporal",
+      "input": "Once you have closed the microwave, pick up the plate and put it in the basket.",
+      "expected_fine": [
+        [
+          "close",
+          null,
+          "microwave"
+        ],
+        [
+          "pick",
+          "plate",
+          null
+        ],
+        [
+          "place_in",
+          "plate",
+          "basket"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"close\", \"object\": null, \"target\": \"microwave\", \"order\": 1},\n        {\"id\": 2, \"action_type\": \"pick\", \"object\": \"plate\", \"target\": null, \"order\": 2},\n        {\"id\": 3, \"action_type\": \"place_in\", \"object\": \"plate\", \"target\": \"basket\", \"order\": 3}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "close",
+          "object": null,
+          "target": "microwave",
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "pick",
+          "object": "plate",
+          "target": null,
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "place_in",
+          "object": "plate",
+          "target": "basket",
+          "order": 3
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "close",
+          null,
+          "microwave"
+        ],
+        [
+          "pick",
+          "plate",
+          null
+        ],
+        [
+          "place_in",
+          "plate",
+          "basket"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Close the microwave.",
+        "Pick up the plate.",
+        "Place the plate in the basket."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 1,
+      "id": "S8",
+      "category": "temporal",
+      "input": "Open the cabinet; once it is open, move the spoon into it, then close it.",
+      "expected_fine": [
+        [
+          "open",
+          null,
+          "cabinet"
+        ],
+        [
+          "pick",
+          "spoon",
+          null
+        ],
+        [
+          "place_in",
+          "spoon",
+          "cabinet"
+        ],
+        [
+          "close",
+          null,
+          "cabinet"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"open\", \"object\": null, \"target\": \"cabinet\", \"order\": 1},\n        {\"id\": 2, \"action_type\": \"pick\", \"object\": \"spoon\", \"target\": null, \"order\": 2},\n        {\"id\": 3, \"action_type\": \"place_in\", \"object\": \"spoon\", \"target\": \"cabinet\", \"order\": 3},\n        {\"id\": 4, \"action_type\": \"close\", \"object\": null, \"target\": \"cabinet\", \"order\": 4}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "open",
+          "object": null,
+          "target": "cabinet",
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "pick",
+          "object": "spoon",
+          "target": null,
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "place_in",
+          "object": "spoon",
+          "target": "cabinet",
+          "order": 3
+        },
+        {
+          "id": 4,
+          "action_type": "close",
+          "object": null,
+          "target": "cabinet",
+          "order": 4
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "open",
+          null,
+          "cabinet"
+        ],
+        [
+          "pick",
+          "spoon",
+          null
+        ],
+        [
+          "place_in",
+          "spoon",
+          "cabinet"
+        ],
+        [
+          "close",
+          null,
+          "cabinet"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Open the cabinet.",
+        "Pick up the spoon.",
+        "Place the spoon in the cabinet.",
+        "Close the cabinet."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 1,
+      "id": "S9",
+      "category": "interleaved",
+      "input": "Pick up the mug, open the microwave, and put the mug in the microwave.",
+      "expected_fine": [
+        [
+          "pick",
+          "mug",
+          null
+        ],
+        [
+          "open",
+          null,
+          "microwave"
+        ],
+        [
+          "place_in",
+          "mug",
+          "microwave"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"mug\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"open\", \"object\": null, \"target\": \"microwave\", \"order\": 2},\n        {\"id\": 3, \"action_type\": \"place_in\", \"object\": \"mug\", \"target\": \"microwave\", \"order\": 3}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "mug",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "open",
+          "object": null,
+          "target": "microwave",
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "place_in",
+          "object": "mug",
+          "target": "microwave",
+          "order": 3
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "mug",
+          null
+        ],
+        [
+          "open",
+          null,
+          "microwave"
+        ],
+        [
+          "place_in",
+          "mug",
+          "microwave"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the mug.",
+        "Open the microwave.",
+        "Place the mug in the microwave."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 1,
+      "id": "S10",
+      "category": "interleaved",
+      "input": "Grab the apple, close the fridge, then set the apple on the plate.",
+      "expected_fine": [
+        [
+          "pick",
+          "apple",
+          null
+        ],
+        [
+          "close",
+          null,
+          "fridge"
+        ],
+        [
+          "place_on",
+          "apple",
+          "plate"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"apple\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"close\", \"object\": null, \"target\": \"fridge\", \"order\": 2},\n        {\"id\": 3, \"action_type\": \"place_on\", \"object\": \"apple\", \"target\": \"plate\", \"order\": 3}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "apple",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "close",
+          "object": null,
+          "target": "fridge",
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "place_on",
+          "object": "apple",
+          "target": "plate",
+          "order": 3
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "apple",
+          null
+        ],
+        [
+          "close",
+          null,
+          "fridge"
+        ],
+        [
+          "place_on",
+          "apple",
+          "plate"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the apple.",
+        "Close the fridge.",
+        "Place the apple on the plate."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 1,
+      "id": "S11",
+      "category": "interleaved",
+      "input": "Pick up the yogurt; before you put it in the fridge, open the fridge.",
+      "expected_fine": [
+        [
+          "pick",
+          "yogurt",
+          null
+        ],
+        [
+          "open",
+          null,
+          "fridge"
+        ],
+        [
+          "place_in",
+          "yogurt",
+          "fridge"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"yogurt\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"open\", \"object\": null, \"target\": \"fridge\", \"order\": 2},\n        {\"id\": 3, \"action_type\": \"place_in\", \"object\": \"yogurt\", \"target\": \"fridge\", \"order\": 3}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "yogurt",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "open",
+          "object": null,
+          "target": "fridge",
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "place_in",
+          "object": "yogurt",
+          "target": "fridge",
+          "order": 3
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "yogurt",
+          null
+        ],
+        [
+          "open",
+          null,
+          "fridge"
+        ],
+        [
+          "place_in",
+          "yogurt",
+          "fridge"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the yogurt.",
+        "Open the fridge.",
+        "Place the yogurt in the fridge."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 1,
+      "id": "S12",
+      "category": "interleaved",
+      "input": "Pick up the book, open the box, put the book inside, close the box, and then put the cup on the shelf.",
+      "expected_fine": [
+        [
+          "pick",
+          "book",
+          null
+        ],
+        [
+          "open",
+          null,
+          "box"
+        ],
+        [
+          "place_in",
+          "book",
+          "box"
+        ],
+        [
+          "close",
+          null,
+          "box"
+        ],
+        [
+          "pick",
+          "cup",
+          null
+        ],
+        [
+          "place_on",
+          "cup",
+          "shelf"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"book\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"open\", \"object\": null, \"target\": \"box\", \"order\": 2},\n        {\"id\": 3, \"action_type\": \"place_in\", \"object\": \"book\", \"target\": \"box\", \"order\": 3},\n        {\"id\": 4, \"action_type\": \"close\", \"object\": null, \"target\": \"box\", \"order\": 4},\n        {\"id\": 5, \"action_type\": \"pick\", \"object\": \"cup\", \"target\": null, \"order\": 5},\n        {\"id\": 6, \"action_type\": \"place_on\", \"object\": \"cup\", \"target\": \"shelf\", \"order\": 6}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "book",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "open",
+          "object": null,
+          "target": "box",
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "place_in",
+          "object": "book",
+          "target": "box",
+          "order": 3
+        },
+        {
+          "id": 4,
+          "action_type": "close",
+          "object": null,
+          "target": "box",
+          "order": 4
+        },
+        {
+          "id": 5,
+          "action_type": "pick",
+          "object": "cup",
+          "target": null,
+          "order": 5
+        },
+        {
+          "id": 6,
+          "action_type": "place_on",
+          "object": "cup",
+          "target": "shelf",
+          "order": 6
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "book",
+          null
+        ],
+        [
+          "open",
+          null,
+          "box"
+        ],
+        [
+          "place_in",
+          "book",
+          "box"
+        ],
+        [
+          "close",
+          null,
+          "box"
+        ],
+        [
+          "pick",
+          "cup",
+          null
+        ],
+        [
+          "place_on",
+          "cup",
+          "shelf"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the book.",
+        "Open the box.",
+        "Place the book in the box.",
+        "Close the box.",
+        "Pick up the cup.",
+        "Place the cup on the shelf."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 2,
+      "id": "S1",
+      "category": "new object/container",
+      "input": "Put the apple in the bowl.",
+      "expected_fine": [
+        [
+          "pick",
+          "apple",
+          null
+        ],
+        [
+          "place_in",
+          "apple",
+          "bowl"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"apple\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"place_in\", \"object\": \"apple\", \"target\": \"bowl\", \"order\": 2}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "apple",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "place_in",
+          "object": "apple",
+          "target": "bowl",
+          "order": 2
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "apple",
+          null
+        ],
+        [
+          "place_in",
+          "apple",
+          "bowl"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the apple.",
+        "Place the apple in the bowl."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 2,
+      "id": "S2",
+      "category": "new object/container",
+      "input": "Place the mug on the stove.",
+      "expected_fine": [
+        [
+          "pick",
+          "mug",
+          null
+        ],
+        [
+          "place_on",
+          "mug",
+          "stove"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"mug\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"place_on\", \"object\": \"mug\", \"target\": \"stove\", \"order\": 2}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "mug",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "place_on",
+          "object": "mug",
+          "target": "stove",
+          "order": 2
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "mug",
+          null
+        ],
+        [
+          "place_on",
+          "mug",
+          "stove"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the mug.",
+        "Place the mug on the stove."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 2,
+      "id": "S3",
+      "category": "temporal",
+      "input": "After opening the microwave, put the mug inside.",
+      "expected_fine": [
+        [
+          "open",
+          null,
+          "microwave"
+        ],
+        [
+          "pick",
+          "mug",
+          null
+        ],
+        [
+          "place_in",
+          "mug",
+          "microwave"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"open\", \"object\": null, \"target\": \"microwave\", \"order\": 1},\n        {\"id\": 2, \"action_type\": \"pick\", \"object\": \"mug\", \"target\": null, \"order\": 2},\n        {\"id\": 3, \"action_type\": \"place_in\", \"object\": \"mug\", \"target\": \"microwave\", \"order\": 3}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "open",
+          "object": null,
+          "target": "microwave",
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "pick",
+          "object": "mug",
+          "target": null,
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "place_in",
+          "object": "mug",
+          "target": "microwave",
+          "order": 3
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "open",
+          null,
+          "microwave"
+        ],
+        [
+          "pick",
+          "mug",
+          null
+        ],
+        [
+          "place_in",
+          "mug",
+          "microwave"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Open the microwave.",
+        "Pick up the mug.",
+        "Place the mug in the microwave."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 2,
+      "id": "S4",
+      "category": "temporal",
+      "input": "Before putting the cream cheese in the basket, put the bowl on the plate.",
+      "expected_fine": [
+        [
+          "pick",
+          "bowl",
+          null
+        ],
+        [
+          "place_on",
+          "bowl",
+          "plate"
+        ],
+        [
+          "pick",
+          "cream cheese",
+          null
+        ],
+        [
+          "place_in",
+          "cream cheese",
+          "basket"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"bowl\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"place_on\", \"object\": \"bowl\", \"target\": \"plate\", \"order\": 2},\n        {\"id\": 3, \"action_type\": \"pick\", \"object\": \"cream cheese\", \"target\": null, \"order\": 3},\n        {\"id\": 4, \"action_type\": \"place_in\", \"object\": \"cream cheese\", \"target\": \"basket\", \"order\": 4}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "bowl",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "place_on",
+          "object": "bowl",
+          "target": "plate",
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "pick",
+          "object": "cream cheese",
+          "target": null,
+          "order": 3
+        },
+        {
+          "id": 4,
+          "action_type": "place_in",
+          "object": "cream cheese",
+          "target": "basket",
+          "order": 4
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "bowl",
+          null
+        ],
+        [
+          "place_on",
+          "bowl",
+          "plate"
+        ],
+        [
+          "pick",
+          "cream cheese",
+          null
+        ],
+        [
+          "place_in",
+          "cream cheese",
+          "basket"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the bowl.",
+        "Place the bowl on the plate.",
+        "Pick up the cream cheese.",
+        "Place the cream cheese in the basket."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 2,
+      "id": "S5",
+      "category": "temporal",
+      "input": "Put the mug on the table after you put the bowl in the sink.",
+      "expected_fine": [
+        [
+          "pick",
+          "bowl",
+          null
+        ],
+        [
+          "place_in",
+          "bowl",
+          "sink"
+        ],
+        [
+          "pick",
+          "mug",
+          null
+        ],
+        [
+          "place_on",
+          "mug",
+          "table"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"bowl\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"place_in\", \"object\": \"bowl\", \"target\": \"sink\", \"order\": 2},\n        {\"id\": 3, \"action_type\": \"pick\", \"object\": \"mug\", \"target\": null, \"order\": 3},\n        {\"id\": 4, \"action_type\": \"place_on\", \"object\": \"mug\", \"target\": \"table\", \"order\": 4}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "bowl",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "place_in",
+          "object": "bowl",
+          "target": "sink",
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "pick",
+          "object": "mug",
+          "target": null,
+          "order": 3
+        },
+        {
+          "id": 4,
+          "action_type": "place_on",
+          "object": "mug",
+          "target": "table",
+          "order": 4
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "bowl",
+          null
+        ],
+        [
+          "place_in",
+          "bowl",
+          "sink"
+        ],
+        [
+          "pick",
+          "mug",
+          null
+        ],
+        [
+          "place_on",
+          "mug",
+          "table"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the bowl.",
+        "Place the bowl in the sink.",
+        "Pick up the mug.",
+        "Place the mug on the table."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 2,
+      "id": "S6",
+      "category": "temporal",
+      "input": "Close the cabinet only after you have put the spoon on the shelf.",
+      "expected_fine": [
+        [
+          "pick",
+          "spoon",
+          null
+        ],
+        [
+          "place_on",
+          "spoon",
+          "shelf"
+        ],
+        [
+          "close",
+          null,
+          "cabinet"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"spoon\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"place_on\", \"object\": \"spoon\", \"target\": \"shelf\", \"order\": 2},\n        {\"id\": 3, \"action_type\": \"close\", \"object\": null, \"target\": \"cabinet\", \"order\": 3}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "spoon",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "place_on",
+          "object": "spoon",
+          "target": "shelf",
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "close",
+          "object": null,
+          "target": "cabinet",
+          "order": 3
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "spoon",
+          null
+        ],
+        [
+          "place_on",
+          "spoon",
+          "shelf"
+        ],
+        [
+          "close",
+          null,
+          "cabinet"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the spoon.",
+        "Place the spoon on the shelf.",
+        "Close the cabinet."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 2,
+      "id": "S7",
+      "category": "temporal",
+      "input": "Once you have closed the microwave, pick up the plate and put it in the basket.",
+      "expected_fine": [
+        [
+          "close",
+          null,
+          "microwave"
+        ],
+        [
+          "pick",
+          "plate",
+          null
+        ],
+        [
+          "place_in",
+          "plate",
+          "basket"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"close\", \"object\": null, \"target\": \"microwave\", \"order\": 1},\n        {\"id\": 2, \"action_type\": \"pick\", \"object\": \"plate\", \"target\": null, \"order\": 2},\n        {\"id\": 3, \"action_type\": \"place_in\", \"object\": \"plate\", \"target\": \"basket\", \"order\": 3}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "close",
+          "object": null,
+          "target": "microwave",
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "pick",
+          "object": "plate",
+          "target": null,
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "place_in",
+          "object": "plate",
+          "target": "basket",
+          "order": 3
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "close",
+          null,
+          "microwave"
+        ],
+        [
+          "pick",
+          "plate",
+          null
+        ],
+        [
+          "place_in",
+          "plate",
+          "basket"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Close the microwave.",
+        "Pick up the plate.",
+        "Place the plate in the basket."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 2,
+      "id": "S8",
+      "category": "temporal",
+      "input": "Open the cabinet; once it is open, move the spoon into it, then close it.",
+      "expected_fine": [
+        [
+          "open",
+          null,
+          "cabinet"
+        ],
+        [
+          "pick",
+          "spoon",
+          null
+        ],
+        [
+          "place_in",
+          "spoon",
+          "cabinet"
+        ],
+        [
+          "close",
+          null,
+          "cabinet"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"open\", \"object\": null, \"target\": \"cabinet\", \"order\": 1},\n        {\"id\": 2, \"action_type\": \"pick\", \"object\": \"spoon\", \"target\": null, \"order\": 2},\n        {\"id\": 3, \"action_type\": \"place_in\", \"object\": \"spoon\", \"target\": \"cabinet\", \"order\": 3},\n        {\"id\": 4, \"action_type\": \"close\", \"object\": null, \"target\": \"cabinet\", \"order\": 4}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "open",
+          "object": null,
+          "target": "cabinet",
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "pick",
+          "object": "spoon",
+          "target": null,
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "place_in",
+          "object": "spoon",
+          "target": "cabinet",
+          "order": 3
+        },
+        {
+          "id": 4,
+          "action_type": "close",
+          "object": null,
+          "target": "cabinet",
+          "order": 4
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "open",
+          null,
+          "cabinet"
+        ],
+        [
+          "pick",
+          "spoon",
+          null
+        ],
+        [
+          "place_in",
+          "spoon",
+          "cabinet"
+        ],
+        [
+          "close",
+          null,
+          "cabinet"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Open the cabinet.",
+        "Pick up the spoon.",
+        "Place the spoon in the cabinet.",
+        "Close the cabinet."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 2,
+      "id": "S9",
+      "category": "interleaved",
+      "input": "Pick up the mug, open the microwave, and put the mug in the microwave.",
+      "expected_fine": [
+        [
+          "pick",
+          "mug",
+          null
+        ],
+        [
+          "open",
+          null,
+          "microwave"
+        ],
+        [
+          "place_in",
+          "mug",
+          "microwave"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"mug\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"open\", \"object\": null, \"target\": \"microwave\", \"order\": 2},\n        {\"id\": 3, \"action_type\": \"place_in\", \"object\": \"mug\", \"target\": \"microwave\", \"order\": 3}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "mug",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "open",
+          "object": null,
+          "target": "microwave",
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "place_in",
+          "object": "mug",
+          "target": "microwave",
+          "order": 3
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "mug",
+          null
+        ],
+        [
+          "open",
+          null,
+          "microwave"
+        ],
+        [
+          "place_in",
+          "mug",
+          "microwave"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the mug.",
+        "Open the microwave.",
+        "Place the mug in the microwave."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 2,
+      "id": "S10",
+      "category": "interleaved",
+      "input": "Grab the apple, close the fridge, then set the apple on the plate.",
+      "expected_fine": [
+        [
+          "pick",
+          "apple",
+          null
+        ],
+        [
+          "close",
+          null,
+          "fridge"
+        ],
+        [
+          "place_on",
+          "apple",
+          "plate"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"apple\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"close\", \"object\": null, \"target\": \"fridge\", \"order\": 2},\n        {\"id\": 3, \"action_type\": \"place_on\", \"object\": \"apple\", \"target\": \"plate\", \"order\": 3}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "apple",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "close",
+          "object": null,
+          "target": "fridge",
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "place_on",
+          "object": "apple",
+          "target": "plate",
+          "order": 3
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "apple",
+          null
+        ],
+        [
+          "close",
+          null,
+          "fridge"
+        ],
+        [
+          "place_on",
+          "apple",
+          "plate"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the apple.",
+        "Close the fridge.",
+        "Place the apple on the plate."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 2,
+      "id": "S11",
+      "category": "interleaved",
+      "input": "Pick up the yogurt; before you put it in the fridge, open the fridge.",
+      "expected_fine": [
+        [
+          "pick",
+          "yogurt",
+          null
+        ],
+        [
+          "open",
+          null,
+          "fridge"
+        ],
+        [
+          "place_in",
+          "yogurt",
+          "fridge"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"yogurt\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"open\", \"object\": null, \"target\": \"fridge\", \"order\": 2},\n        {\"id\": 3, \"action_type\": \"place_in\", \"object\": \"yogurt\", \"target\": \"fridge\", \"order\": 3}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "yogurt",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "open",
+          "object": null,
+          "target": "fridge",
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "place_in",
+          "object": "yogurt",
+          "target": "fridge",
+          "order": 3
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "yogurt",
+          null
+        ],
+        [
+          "open",
+          null,
+          "fridge"
+        ],
+        [
+          "place_in",
+          "yogurt",
+          "fridge"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the yogurt.",
+        "Open the fridge.",
+        "Place the yogurt in the fridge."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 2,
+      "id": "S12",
+      "category": "interleaved",
+      "input": "Pick up the book, open the box, put the book inside, close the box, and then put the cup on the shelf.",
+      "expected_fine": [
+        [
+          "pick",
+          "book",
+          null
+        ],
+        [
+          "open",
+          null,
+          "box"
+        ],
+        [
+          "place_in",
+          "book",
+          "box"
+        ],
+        [
+          "close",
+          null,
+          "box"
+        ],
+        [
+          "pick",
+          "cup",
+          null
+        ],
+        [
+          "place_on",
+          "cup",
+          "shelf"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"book\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"open\", \"object\": null, \"target\": \"box\", \"order\": 2},\n        {\"id\": 3, \"action_type\": \"place_in\", \"object\": \"book\", \"target\": \"box\", \"order\": 3},\n        {\"id\": 4, \"action_type\": \"close\", \"object\": null, \"target\": \"box\", \"order\": 4},\n        {\"id\": 5, \"action_type\": \"pick\", \"object\": \"cup\", \"target\": null, \"order\": 5},\n        {\"id\": 6, \"action_type\": \"place_on\", \"object\": \"cup\", \"target\": \"shelf\", \"order\": 6}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "book",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "open",
+          "object": null,
+          "target": "box",
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "place_in",
+          "object": "book",
+          "target": "box",
+          "order": 3
+        },
+        {
+          "id": 4,
+          "action_type": "close",
+          "object": null,
+          "target": "box",
+          "order": 4
+        },
+        {
+          "id": 5,
+          "action_type": "pick",
+          "object": "cup",
+          "target": null,
+          "order": 5
+        },
+        {
+          "id": 6,
+          "action_type": "place_on",
+          "object": "cup",
+          "target": "shelf",
+          "order": 6
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "book",
+          null
+        ],
+        [
+          "open",
+          null,
+          "box"
+        ],
+        [
+          "place_in",
+          "book",
+          "box"
+        ],
+        [
+          "close",
+          null,
+          "box"
+        ],
+        [
+          "pick",
+          "cup",
+          null
+        ],
+        [
+          "place_on",
+          "cup",
+          "shelf"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the book.",
+        "Open the box.",
+        "Place the book in the box.",
+        "Close the box.",
+        "Pick up the cup.",
+        "Place the cup on the shelf."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 3,
+      "id": "S1",
+      "category": "new object/container",
+      "input": "Put the apple in the bowl.",
+      "expected_fine": [
+        [
+          "pick",
+          "apple",
+          null
+        ],
+        [
+          "place_in",
+          "apple",
+          "bowl"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"apple\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"place_in\", \"object\": \"apple\", \"target\": \"bowl\", \"order\": 2}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "apple",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "place_in",
+          "object": "apple",
+          "target": "bowl",
+          "order": 2
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "apple",
+          null
+        ],
+        [
+          "place_in",
+          "apple",
+          "bowl"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the apple.",
+        "Place the apple in the bowl."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 3,
+      "id": "S2",
+      "category": "new object/container",
+      "input": "Place the mug on the stove.",
+      "expected_fine": [
+        [
+          "pick",
+          "mug",
+          null
+        ],
+        [
+          "place_on",
+          "mug",
+          "stove"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"mug\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"place_on\", \"object\": \"mug\", \"target\": \"stove\", \"order\": 2}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "mug",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "place_on",
+          "object": "mug",
+          "target": "stove",
+          "order": 2
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "mug",
+          null
+        ],
+        [
+          "place_on",
+          "mug",
+          "stove"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the mug.",
+        "Place the mug on the stove."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 3,
+      "id": "S3",
+      "category": "temporal",
+      "input": "After opening the microwave, put the mug inside.",
+      "expected_fine": [
+        [
+          "open",
+          null,
+          "microwave"
+        ],
+        [
+          "pick",
+          "mug",
+          null
+        ],
+        [
+          "place_in",
+          "mug",
+          "microwave"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"open\", \"object\": null, \"target\": \"microwave\", \"order\": 1},\n        {\"id\": 2, \"action_type\": \"pick\", \"object\": \"mug\", \"target\": null, \"order\": 2},\n        {\"id\": 3, \"action_type\": \"place_in\", \"object\": \"mug\", \"target\": \"microwave\", \"order\": 3}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "open",
+          "object": null,
+          "target": "microwave",
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "pick",
+          "object": "mug",
+          "target": null,
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "place_in",
+          "object": "mug",
+          "target": "microwave",
+          "order": 3
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "open",
+          null,
+          "microwave"
+        ],
+        [
+          "pick",
+          "mug",
+          null
+        ],
+        [
+          "place_in",
+          "mug",
+          "microwave"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Open the microwave.",
+        "Pick up the mug.",
+        "Place the mug in the microwave."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 3,
+      "id": "S4",
+      "category": "temporal",
+      "input": "Before putting the cream cheese in the basket, put the bowl on the plate.",
+      "expected_fine": [
+        [
+          "pick",
+          "bowl",
+          null
+        ],
+        [
+          "place_on",
+          "bowl",
+          "plate"
+        ],
+        [
+          "pick",
+          "cream cheese",
+          null
+        ],
+        [
+          "place_in",
+          "cream cheese",
+          "basket"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"bowl\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"place_on\", \"object\": \"bowl\", \"target\": \"plate\", \"order\": 2},\n        {\"id\": 3, \"action_type\": \"pick\", \"object\": \"cream cheese\", \"target\": null, \"order\": 3},\n        {\"id\": 4, \"action_type\": \"place_in\", \"object\": \"cream cheese\", \"target\": \"basket\", \"order\": 4}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "bowl",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "place_on",
+          "object": "bowl",
+          "target": "plate",
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "pick",
+          "object": "cream cheese",
+          "target": null,
+          "order": 3
+        },
+        {
+          "id": 4,
+          "action_type": "place_in",
+          "object": "cream cheese",
+          "target": "basket",
+          "order": 4
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "bowl",
+          null
+        ],
+        [
+          "place_on",
+          "bowl",
+          "plate"
+        ],
+        [
+          "pick",
+          "cream cheese",
+          null
+        ],
+        [
+          "place_in",
+          "cream cheese",
+          "basket"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the bowl.",
+        "Place the bowl on the plate.",
+        "Pick up the cream cheese.",
+        "Place the cream cheese in the basket."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 3,
+      "id": "S5",
+      "category": "temporal",
+      "input": "Put the mug on the table after you put the bowl in the sink.",
+      "expected_fine": [
+        [
+          "pick",
+          "bowl",
+          null
+        ],
+        [
+          "place_in",
+          "bowl",
+          "sink"
+        ],
+        [
+          "pick",
+          "mug",
+          null
+        ],
+        [
+          "place_on",
+          "mug",
+          "table"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"bowl\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"place_in\", \"object\": \"bowl\", \"target\": \"sink\", \"order\": 2},\n        {\"id\": 3, \"action_type\": \"pick\", \"object\": \"mug\", \"target\": null, \"order\": 3},\n        {\"id\": 4, \"action_type\": \"place_on\", \"object\": \"mug\", \"target\": \"table\", \"order\": 4}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "bowl",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "place_in",
+          "object": "bowl",
+          "target": "sink",
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "pick",
+          "object": "mug",
+          "target": null,
+          "order": 3
+        },
+        {
+          "id": 4,
+          "action_type": "place_on",
+          "object": "mug",
+          "target": "table",
+          "order": 4
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "bowl",
+          null
+        ],
+        [
+          "place_in",
+          "bowl",
+          "sink"
+        ],
+        [
+          "pick",
+          "mug",
+          null
+        ],
+        [
+          "place_on",
+          "mug",
+          "table"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the bowl.",
+        "Place the bowl in the sink.",
+        "Pick up the mug.",
+        "Place the mug on the table."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 3,
+      "id": "S6",
+      "category": "temporal",
+      "input": "Close the cabinet only after you have put the spoon on the shelf.",
+      "expected_fine": [
+        [
+          "pick",
+          "spoon",
+          null
+        ],
+        [
+          "place_on",
+          "spoon",
+          "shelf"
+        ],
+        [
+          "close",
+          null,
+          "cabinet"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"spoon\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"place_on\", \"object\": \"spoon\", \"target\": \"shelf\", \"order\": 2},\n        {\"id\": 3, \"action_type\": \"close\", \"object\": null, \"target\": \"cabinet\", \"order\": 3}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "spoon",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "place_on",
+          "object": "spoon",
+          "target": "shelf",
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "close",
+          "object": null,
+          "target": "cabinet",
+          "order": 3
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "spoon",
+          null
+        ],
+        [
+          "place_on",
+          "spoon",
+          "shelf"
+        ],
+        [
+          "close",
+          null,
+          "cabinet"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the spoon.",
+        "Place the spoon on the shelf.",
+        "Close the cabinet."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 3,
+      "id": "S7",
+      "category": "temporal",
+      "input": "Once you have closed the microwave, pick up the plate and put it in the basket.",
+      "expected_fine": [
+        [
+          "close",
+          null,
+          "microwave"
+        ],
+        [
+          "pick",
+          "plate",
+          null
+        ],
+        [
+          "place_in",
+          "plate",
+          "basket"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"close\", \"object\": null, \"target\": \"microwave\", \"order\": 1},\n        {\"id\": 2, \"action_type\": \"pick\", \"object\": \"plate\", \"target\": null, \"order\": 2},\n        {\"id\": 3, \"action_type\": \"place_in\", \"object\": \"plate\", \"target\": \"basket\", \"order\": 3}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "close",
+          "object": null,
+          "target": "microwave",
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "pick",
+          "object": "plate",
+          "target": null,
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "place_in",
+          "object": "plate",
+          "target": "basket",
+          "order": 3
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "close",
+          null,
+          "microwave"
+        ],
+        [
+          "pick",
+          "plate",
+          null
+        ],
+        [
+          "place_in",
+          "plate",
+          "basket"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Close the microwave.",
+        "Pick up the plate.",
+        "Place the plate in the basket."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 3,
+      "id": "S8",
+      "category": "temporal",
+      "input": "Open the cabinet; once it is open, move the spoon into it, then close it.",
+      "expected_fine": [
+        [
+          "open",
+          null,
+          "cabinet"
+        ],
+        [
+          "pick",
+          "spoon",
+          null
+        ],
+        [
+          "place_in",
+          "spoon",
+          "cabinet"
+        ],
+        [
+          "close",
+          null,
+          "cabinet"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"open\", \"object\": null, \"target\": \"cabinet\", \"order\": 1},\n        {\"id\": 2, \"action_type\": \"pick\", \"object\": \"spoon\", \"target\": null, \"order\": 2},\n        {\"id\": 3, \"action_type\": \"place_in\", \"object\": \"spoon\", \"target\": \"cabinet\", \"order\": 3},\n        {\"id\": 4, \"action_type\": \"close\", \"object\": null, \"target\": \"cabinet\", \"order\": 4}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "open",
+          "object": null,
+          "target": "cabinet",
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "pick",
+          "object": "spoon",
+          "target": null,
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "place_in",
+          "object": "spoon",
+          "target": "cabinet",
+          "order": 3
+        },
+        {
+          "id": 4,
+          "action_type": "close",
+          "object": null,
+          "target": "cabinet",
+          "order": 4
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "open",
+          null,
+          "cabinet"
+        ],
+        [
+          "pick",
+          "spoon",
+          null
+        ],
+        [
+          "place_in",
+          "spoon",
+          "cabinet"
+        ],
+        [
+          "close",
+          null,
+          "cabinet"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Open the cabinet.",
+        "Pick up the spoon.",
+        "Place the spoon in the cabinet.",
+        "Close the cabinet."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 3,
+      "id": "S9",
+      "category": "interleaved",
+      "input": "Pick up the mug, open the microwave, and put the mug in the microwave.",
+      "expected_fine": [
+        [
+          "pick",
+          "mug",
+          null
+        ],
+        [
+          "open",
+          null,
+          "microwave"
+        ],
+        [
+          "place_in",
+          "mug",
+          "microwave"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"mug\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"open\", \"object\": null, \"target\": \"microwave\", \"order\": 2},\n        {\"id\": 3, \"action_type\": \"place_in\", \"object\": \"mug\", \"target\": \"microwave\", \"order\": 3}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "mug",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "open",
+          "object": null,
+          "target": "microwave",
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "place_in",
+          "object": "mug",
+          "target": "microwave",
+          "order": 3
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "mug",
+          null
+        ],
+        [
+          "open",
+          null,
+          "microwave"
+        ],
+        [
+          "place_in",
+          "mug",
+          "microwave"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the mug.",
+        "Open the microwave.",
+        "Place the mug in the microwave."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 3,
+      "id": "S10",
+      "category": "interleaved",
+      "input": "Grab the apple, close the fridge, then set the apple on the plate.",
+      "expected_fine": [
+        [
+          "pick",
+          "apple",
+          null
+        ],
+        [
+          "close",
+          null,
+          "fridge"
+        ],
+        [
+          "place_on",
+          "apple",
+          "plate"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"apple\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"close\", \"object\": null, \"target\": \"fridge\", \"order\": 2},\n        {\"id\": 3, \"action_type\": \"place_on\", \"object\": \"apple\", \"target\": \"plate\", \"order\": 3}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "apple",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "close",
+          "object": null,
+          "target": "fridge",
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "place_on",
+          "object": "apple",
+          "target": "plate",
+          "order": 3
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "apple",
+          null
+        ],
+        [
+          "close",
+          null,
+          "fridge"
+        ],
+        [
+          "place_on",
+          "apple",
+          "plate"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the apple.",
+        "Close the fridge.",
+        "Place the apple on the plate."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 3,
+      "id": "S11",
+      "category": "interleaved",
+      "input": "Pick up the yogurt; before you put it in the fridge, open the fridge.",
+      "expected_fine": [
+        [
+          "pick",
+          "yogurt",
+          null
+        ],
+        [
+          "open",
+          null,
+          "fridge"
+        ],
+        [
+          "place_in",
+          "yogurt",
+          "fridge"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"yogurt\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"open\", \"object\": null, \"target\": \"fridge\", \"order\": 2},\n        {\"id\": 3, \"action_type\": \"place_in\", \"object\": \"yogurt\", \"target\": \"fridge\", \"order\": 3}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "yogurt",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "open",
+          "object": null,
+          "target": "fridge",
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "place_in",
+          "object": "yogurt",
+          "target": "fridge",
+          "order": 3
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "yogurt",
+          null
+        ],
+        [
+          "open",
+          null,
+          "fridge"
+        ],
+        [
+          "place_in",
+          "yogurt",
+          "fridge"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the yogurt.",
+        "Open the fridge.",
+        "Place the yogurt in the fridge."
+      ],
+      "exact_match": true
+    },
+    {
+      "run": 3,
+      "id": "S12",
+      "category": "interleaved",
+      "input": "Pick up the book, open the box, put the book inside, close the box, and then put the cup on the shelf.",
+      "expected_fine": [
+        [
+          "pick",
+          "book",
+          null
+        ],
+        [
+          "open",
+          null,
+          "box"
+        ],
+        [
+          "place_in",
+          "book",
+          "box"
+        ],
+        [
+          "close",
+          null,
+          "box"
+        ],
+        [
+          "pick",
+          "cup",
+          null
+        ],
+        [
+          "place_on",
+          "cup",
+          "shelf"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\"id\": 1, \"action_type\": \"pick\", \"object\": \"book\", \"target\": null, \"order\": 1},\n        {\"id\": 2, \"action_type\": \"open\", \"object\": null, \"target\": \"box\", \"order\": 2},\n        {\"id\": 3, \"action_type\": \"place_in\", \"object\": \"book\", \"target\": \"box\", \"order\": 3},\n        {\"id\": 4, \"action_type\": \"close\", \"object\": null, \"target\": \"box\", \"order\": 4},\n        {\"id\": 5, \"action_type\": \"pick\", \"object\": \"cup\", \"target\": null, \"order\": 5},\n        {\"id\": 6, \"action_type\": \"place_on\", \"object\": \"cup\", \"target\": \"shelf\", \"order\": 6}\n    ]\n}",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick",
+          "object": "book",
+          "target": null,
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "open",
+          "object": null,
+          "target": "box",
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "place_in",
+          "object": "book",
+          "target": "box",
+          "order": 3
+        },
+        {
+          "id": 4,
+          "action_type": "close",
+          "object": null,
+          "target": "box",
+          "order": 4
+        },
+        {
+          "id": 5,
+          "action_type": "pick",
+          "object": "cup",
+          "target": null,
+          "order": 5
+        },
+        {
+          "id": 6,
+          "action_type": "place_on",
+          "object": "cup",
+          "target": "shelf",
+          "order": 6
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick",
+          "book",
+          null
+        ],
+        [
+          "open",
+          null,
+          "box"
+        ],
+        [
+          "place_in",
+          "book",
+          "box"
+        ],
+        [
+          "close",
+          null,
+          "box"
+        ],
+        [
+          "pick",
+          "cup",
+          null
+        ],
+        [
+          "place_on",
+          "cup",
+          "shelf"
+        ]
+      ],
+      "validation_errors": [],
+      "instructions": [
+        "Pick up the book.",
+        "Open the box.",
+        "Place the book in the box.",
+        "Close the box.",
+        "Pick up the cup.",
+        "Place the cup on the shelf."
+      ],
+      "exact_match": true
+    }
+  ]
+}

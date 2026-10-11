@@ -20,6 +20,7 @@ import pytest  # noqa: E402
 from task_decomposer import TaskDecomposer  # noqa: E402
 from schema_v2_eval import parse_expected  # noqa: E402
 from baseline_eval import TEST_SET  # noqa: E402
+from stress_tests import STRESS_SET  # noqa: E402
 
 # validate_plan / generate_instruction do not use the API client.
 decomposer = TaskDecomposer.__new__(TaskDecomposer)
@@ -44,10 +45,30 @@ def test_l6_interleaved_plan_is_valid():
     assert decomposer.validate_plan(L6_PLAN) == []
 
 
-@pytest.mark.parametrize("case", TEST_SET, ids=lambda c: c["id"])
+@pytest.mark.parametrize("case", TEST_SET + STRESS_SET, ids=lambda c: c["id"])
 def test_expected_plans_are_valid(case):
     expected = [parse_expected(s) for s in case["expected"]]
     assert decomposer.validate_plan(plan(*expected)) == []
+
+
+def test_few_shot_example_does_not_leak_test_structure():
+    # The prompt example must not share a sentence or an action sequence
+    # with any evaluated case, otherwise the prompt hands over the answer.
+    # The prompt is read from source because __init__ needs an API key.
+    path = os.path.join(os.path.dirname(EVAL_DIR), "task_decomposer.py")
+    with open(path, encoding="utf-8") as f:
+        example_block = f.read().split("Instruction: ", 1)[1].split('"""', 1)[0]
+    example = example_block.split("\n", 1)[0].strip()
+    example_actions = [
+        line.split('"action_type": "')[1].split('"')[0]
+        for line in example_block.splitlines()
+        if '"action_type": "' in line
+    ]
+    assert example_actions, "could not parse the few-shot example"
+    for case in TEST_SET + STRESS_SET:
+        assert case["input"] != example, case["id"]
+        actions = [parse_expected(s)[0] for s in case["expected"]]
+        assert actions != example_actions, case["id"]
 
 
 @pytest.mark.parametrize(
@@ -120,15 +141,21 @@ def load_results(name):
         return json.load(f)["results"]
 
 
-def test_recorded_v2_results_match_and_validate():
-    for r in load_results("schema_v2_results.json"):
+L_RESULTS = ["schema_v2_results.json", "schema_v2_example2_results.json"]
+STRESS_RESULTS = ["stress_example1_results.json", "stress_example2_results.json"]
+
+
+@pytest.mark.parametrize("name", L_RESULTS + STRESS_RESULTS)
+def test_recorded_v2_results_match_and_validate(name):
+    for r in load_results(name):
         assert r["exact_match"], (r["run"], r["id"], r["predicted_triples"])
         assert r["validation_errors"] == [], (r["run"], r["id"])
 
 
-def test_no_regression_against_v1_baseline():
+@pytest.mark.parametrize("name", L_RESULTS)
+def test_no_regression_against_v1_baseline(name):
     v1 = {r["id"]: r for r in load_results("baseline_results.json")}
-    for r in load_results("schema_v2_results.json"):
+    for r in load_results(name):
         old = v1[r["id"]]
         if old["exact_match"]:
             assert merge_adjacent(r["predicted_triples"]) == old["predicted_triples"], r["id"]
