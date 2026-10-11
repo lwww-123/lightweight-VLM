@@ -18,48 +18,65 @@ class TaskDecomposer:
 You are a task decomposition module for a robot manipulation system.
 
 Your task is to decompose a high-level manipulation instruction
-into a sequence of complete and executable manipulation subtasks.
+into a sequence of executable manipulation subtasks.
 
-Only use the following four action types:
+The robot has a single gripper and can hold at most one object at a time.
 
-1. pick_and_place_on
-   Pick up an object and place it on a target surface.
+Only use the following five action types:
 
-2. pick_and_place_in
-   Pick up an object and place it inside a container.
+1. pick
+   Pick up an object and keep holding it.
+   object: the object. target: null.
 
-3. open
+2. place_on
+   Place the object currently held on a target surface.
+   object: the held object. target: the surface.
+
+3. place_in
+   Place the object currently held inside a container.
+   object: the held object. target: the container.
+
+4. open
    Open a container or appliance.
+   object: null. target: the container or appliance.
 
-4. close
+5. close
    Close a container or appliance.
+   object: null. target: the container or appliance.
 
 Rules:
 
-1. Each subtask must represent one complete manipulation goal.
-2. Combine picking up and placing an object into one subtask.
-3. Separate operations involving different objects or targets.
-4. Preserve the logical order of the original instruction.
-5. Do not split "pick up" and "place" into separate subtasks.
-6. Do not invent objects, targets, or actions.
-7. Return only valid JSON.
+1. Output subtasks in the order they are physically executed.
+   Resolve temporal words such as "before", "after", "once", "then"
+   and "only after" into the real execution order. When the instruction
+   already lists actions in execution order, keep that order exactly.
+2. Picking up and placing an object are separate subtasks. Never merge them.
+3. Verbs such as "put", "move" or "place X into Y" mean pick followed by
+   place_on or place_in.
+4. Every place_on / place_in must come after a pick of the same object,
+   with no other pick in between. If the instruction places an object
+   without mentioning picking it up, insert the pick immediately before
+   that place.
+5. Do not pick a second object while still holding one, and do not leave
+   an object in the gripper at the end of the plan.
+6. Resolve words such as "it", "inside" and "there" to the concrete
+   object or target name.
+7. Do not invent objects or targets, and do not add actions that the
+   instruction does not require. The implicit pick in rule 4 is required.
+8. Return only valid JSON.
 
-Output format:
+Example:
+
+Instruction: Pick up the bowl, open the cabinet, put the bowl inside, and close the cabinet.
 
 {
     "subtasks": [
-        {
-            "id": 1,
-            "action_type": "pick_and_place_on",
-            "object": "mug",
-            "target": "plate",
-            "order": 1
-        }
+        {"id": 1, "action_type": "pick", "object": "bowl", "target": null, "order": 1},
+        {"id": 2, "action_type": "open", "object": null, "target": "cabinet", "order": 2},
+        {"id": 3, "action_type": "place_in", "object": "bowl", "target": "cabinet", "order": 3},
+        {"id": 4, "action_type": "close", "object": null, "target": "cabinet", "order": 4}
     ]
 }
-
-For open and close actions, use the target field
-and set object to null.
 """
 
     def decompose(self, task_instruction):
@@ -113,7 +130,24 @@ and set object to null.
         obj = subtask["object"]
         target = subtask["target"]
 
-        if action == "pick_and_place_on":
+        if action in ("pick", "place_on", "place_in") and obj is None:
+            raise ValueError(f"{action} requires an object: {subtask}")
+
+        if action in ("place_on", "place_in", "open", "close") and target is None:
+            raise ValueError(f"{action} requires a target: {subtask}")
+
+        if action == "pick":
+            return f"Pick up the {obj}."
+
+        elif action == "place_on":
+            return f"Place the {obj} on the {target}."
+
+        elif action == "place_in":
+            return f"Place the {obj} in the {target}."
+
+        # Legacy v1 action types, kept so older decomposed JSON files
+        # can still be turned into instructions.
+        elif action == "pick_and_place_on":
             return f"Pick up the {obj} and place it on the {target}."
 
         elif action == "pick_and_place_in":
@@ -130,9 +164,72 @@ and set object to null.
                 f"Unknown action type: {action}"
             )
 
+    def validate_plan(self, subtasks):
+        """Check a v2 plan against the single-gripper state rules.
+
+        Returns a list of error strings; an empty list means the plan is valid.
+        Whether a container starts open is unknown, so place_in is only
+        rejected when the plan itself closed the target and did not reopen it.
+        """
+
+        errors = []
+        valid_actions = ("pick", "place_on", "place_in", "open", "close")
+
+        orders = [s.get("order") for s in subtasks]
+        if orders != list(range(1, len(subtasks) + 1)):
+            errors.append(f"order must be 1..{len(subtasks)} in sequence, got {orders}")
+
+        held = None
+        last_state = {}
+
+        for subtask in sorted(subtasks, key=lambda s: s.get("order", 0)):
+
+            step = subtask.get("order")
+            action = subtask.get("action_type")
+            obj = subtask.get("object")
+            target = subtask.get("target")
+
+            if action not in valid_actions:
+                errors.append(f"step {step}: unknown action type {action!r}")
+                continue
+
+            if action == "pick":
+                if obj is None or target is not None:
+                    errors.append(f"step {step}: pick needs an object and a null target")
+                if held is not None:
+                    errors.append(f"step {step}: pick {obj} while still holding {held}")
+                held = obj
+
+            elif action in ("place_on", "place_in"):
+                if obj is None or target is None:
+                    errors.append(f"step {step}: {action} needs an object and a target")
+                if held is None:
+                    errors.append(f"step {step}: {action} {obj} without picking it up first")
+                elif held != obj:
+                    errors.append(f"step {step}: {action} {obj} while holding {held}")
+                if action == "place_in" and last_state.get(target) == "close":
+                    errors.append(f"step {step}: place_in {target} after it was closed")
+                held = None
+
+            else:
+                if obj is not None or target is None:
+                    errors.append(f"step {step}: {action} needs a null object and a target")
+                last_state[target] = action
+
+        if held is not None:
+            errors.append(f"plan ends while still holding {held}")
+
+        return errors
+
     def process(self, task_instruction):
 
         subtasks = self.decompose(task_instruction)
+
+        errors = self.validate_plan(subtasks)
+        if errors:
+            raise ValueError(
+                "Invalid plan:\n" + "\n".join(errors)
+            )
 
         output = {
             "original_task": task_instruction,

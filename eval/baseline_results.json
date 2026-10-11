@@ -1,0 +1,637 @@
+{
+  "baseline_type": "reconstructed baseline",
+  "warning": "Reconstructed after the original file was overwritten. Only L6 raw_output is verbatim; see 'reconstructed' for what is exact vs approximate.",
+  "model": "qwen-plus",
+  "temperature": 0,
+  "timestamp": null,
+  "reconstructed": {
+    "when": "2026-10-11",
+    "why": "The original file was accidentally overwritten by rerunning eval/baseline_eval.py after the v2 prompt change. Rebuilt from the original run's console output.",
+    "exact": [
+      "system_prompt (git HEAD task_decomposer.py)",
+      "predicted_triples / exact_match for L1-L10",
+      "L6 raw_output",
+      "judgment / failure_types / note"
+    ],
+    "approximate": [
+      "raw_output for all cases except L6: NOT the original API response text; re-serialized from the parsed subtasks (same content, whitespace/field layout may differ)",
+      "timestamp unknown (original run around 2026-10-07 17:03 +0800)"
+    ],
+    "rerun_plan": "For publication, rerun eval/baseline_eval.py's v1 prompt (frozen in git HEAD a77bc11 task_decomposer.py) into a new file; do not overwrite this one."
+  },
+  "system_prompt": "\nYou are a task decomposition module for a robot manipulation system.\n\nYour task is to decompose a high-level manipulation instruction\ninto a sequence of complete and executable manipulation subtasks.\n\nOnly use the following four action types:\n\n1. pick_and_place_on\n   Pick up an object and place it on a target surface.\n\n2. pick_and_place_in\n   Pick up an object and place it inside a container.\n\n3. open\n   Open a container or appliance.\n\n4. close\n   Close a container or appliance.\n\nRules:\n\n1. Each subtask must represent one complete manipulation goal.\n2. Combine picking up and placing an object into one subtask.\n3. Separate operations involving different objects or targets.\n4. Preserve the logical order of the original instruction.\n5. Do not split \"pick up\" and \"place\" into separate subtasks.\n6. Do not invent objects, targets, or actions.\n7. Return only valid JSON.\n\nOutput format:\n\n{\n    \"subtasks\": [\n        {\n            \"id\": 1,\n            \"action_type\": \"pick_and_place_on\",\n            \"object\": \"mug\",\n            \"target\": \"plate\",\n            \"order\": 1\n        }\n    ]\n}\n\nFor open and close actions, use the target field\nand set object to null.\n",
+  "results": [
+    {
+      "id": "L1",
+      "input": "Pick up the ketchup and place it in the basket.",
+      "expected": [
+        "pick up ketchup",
+        "place ketchup in basket"
+      ],
+      "expected_merged": [
+        [
+          "pick_and_place_in",
+          "ketchup",
+          "basket"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\n            \"id\": 1,\n            \"action_type\": \"pick_and_place_in\",\n            \"object\": \"ketchup\",\n            \"target\": \"basket\",\n            \"order\": 1\n        }\n    ]\n}",
+      "raw_output_provenance": "reconstructed from parsed triples (original text lost)",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick_and_place_in",
+          "object": "ketchup",
+          "target": "basket",
+          "order": 1
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick_and_place_in",
+          "ketchup",
+          "basket"
+        ]
+      ],
+      "exact_match": true,
+      "judgment": "Correct",
+      "failure_types": [],
+      "note": ""
+    },
+    {
+      "id": "L2",
+      "input": "Grab the ketchup and put it in the basket.",
+      "expected": [
+        "pick up ketchup",
+        "place ketchup in basket"
+      ],
+      "expected_merged": [
+        [
+          "pick_and_place_in",
+          "ketchup",
+          "basket"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\n            \"id\": 1,\n            \"action_type\": \"pick_and_place_in\",\n            \"object\": \"ketchup\",\n            \"target\": \"basket\",\n            \"order\": 1\n        }\n    ]\n}",
+      "raw_output_provenance": "reconstructed from parsed triples (original text lost)",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick_and_place_in",
+          "object": "ketchup",
+          "target": "basket",
+          "order": 1
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick_and_place_in",
+          "ketchup",
+          "basket"
+        ]
+      ],
+      "exact_match": true,
+      "judgment": "Correct",
+      "failure_types": [],
+      "note": ""
+    },
+    {
+      "id": "L3",
+      "input": "After picking up the ketchup, place it in the basket.",
+      "expected": [
+        "pick up ketchup",
+        "place ketchup in basket"
+      ],
+      "expected_merged": [
+        [
+          "pick_and_place_in",
+          "ketchup",
+          "basket"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\n            \"id\": 1,\n            \"action_type\": \"pick_and_place_in\",\n            \"object\": \"ketchup\",\n            \"target\": \"basket\",\n            \"order\": 1\n        }\n    ]\n}",
+      "raw_output_provenance": "reconstructed from parsed triples (original text lost)",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick_and_place_in",
+          "object": "ketchup",
+          "target": "basket",
+          "order": 1
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick_and_place_in",
+          "ketchup",
+          "basket"
+        ]
+      ],
+      "exact_match": true,
+      "judgment": "Correct",
+      "failure_types": [],
+      "note": ""
+    },
+    {
+      "id": "L4",
+      "input": "Open the drawer and then place the ketchup inside.",
+      "expected": [
+        "open drawer",
+        "pick up ketchup",
+        "place ketchup in drawer"
+      ],
+      "expected_merged": [
+        [
+          "open",
+          null,
+          "drawer"
+        ],
+        [
+          "pick_and_place_in",
+          "ketchup",
+          "drawer"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\n            \"id\": 1,\n            \"action_type\": \"open\",\n            \"object\": null,\n            \"target\": \"drawer\",\n            \"order\": 1\n        },\n        {\n            \"id\": 2,\n            \"action_type\": \"pick_and_place_in\",\n            \"object\": \"ketchup\",\n            \"target\": \"drawer\",\n            \"order\": 2\n        }\n    ]\n}",
+      "raw_output_provenance": "reconstructed from parsed triples (original text lost)",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "open",
+          "object": null,
+          "target": "drawer",
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "pick_and_place_in",
+          "object": "ketchup",
+          "target": "drawer",
+          "order": 2
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "open",
+          null,
+          "drawer"
+        ],
+        [
+          "pick_and_place_in",
+          "ketchup",
+          "drawer"
+        ]
+      ],
+      "exact_match": true,
+      "judgment": "Correct",
+      "failure_types": [],
+      "note": ""
+    },
+    {
+      "id": "L5",
+      "input": "Before placing the ketchup in the drawer, open the drawer.",
+      "expected": [
+        "open drawer",
+        "pick up ketchup",
+        "place ketchup in drawer"
+      ],
+      "expected_merged": [
+        [
+          "open",
+          null,
+          "drawer"
+        ],
+        [
+          "pick_and_place_in",
+          "ketchup",
+          "drawer"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\n            \"id\": 1,\n            \"action_type\": \"open\",\n            \"object\": null,\n            \"target\": \"drawer\",\n            \"order\": 1\n        },\n        {\n            \"id\": 2,\n            \"action_type\": \"pick_and_place_in\",\n            \"object\": \"ketchup\",\n            \"target\": \"drawer\",\n            \"order\": 2\n        }\n    ]\n}",
+      "raw_output_provenance": "reconstructed from parsed triples (original text lost)",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "open",
+          "object": null,
+          "target": "drawer",
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "pick_and_place_in",
+          "object": "ketchup",
+          "target": "drawer",
+          "order": 2
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "open",
+          null,
+          "drawer"
+        ],
+        [
+          "pick_and_place_in",
+          "ketchup",
+          "drawer"
+        ]
+      ],
+      "exact_match": true,
+      "judgment": "Correct",
+      "failure_types": [],
+      "note": ""
+    },
+    {
+      "id": "L6",
+      "input": "Pick up the ketchup, open the drawer, place the ketchup inside, and close the drawer.",
+      "expected": [
+        "pick up ketchup",
+        "open drawer",
+        "place ketchup in drawer",
+        "close drawer"
+      ],
+      "expected_merged": [
+        [
+          "open",
+          null,
+          "drawer"
+        ],
+        [
+          "pick_and_place_in",
+          "ketchup",
+          "drawer"
+        ],
+        [
+          "close",
+          null,
+          "drawer"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\n            \"id\": 1,\n            \"action_type\": \"pick_and_place_in\",\n            \"object\": \"ketchup\",\n            \"target\": \"drawer\",\n            \"order\": 1\n        },\n        {\n            \"id\": 2,\n            \"action_type\": \"open\",\n            \"object\": null,\n            \"target\": \"drawer\",\n            \"order\": 2\n        },\n        {\n            \"id\": 3,\n            \"action_type\": \"pick_and_place_in\",\n            \"object\": \"ketchup\",\n            \"target\": \"drawer\",\n            \"order\": 3\n        },\n        {\n            \"id\": 4,\n            \"action_type\": \"close\",\n            \"object\": null,\n            \"target\": \"drawer\",\n            \"order\": 4\n        }\n    ]\n}",
+      "raw_output_provenance": "verbatim",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "pick_and_place_in",
+          "object": "ketchup",
+          "target": "drawer",
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "open",
+          "object": null,
+          "target": "drawer",
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "pick_and_place_in",
+          "object": "ketchup",
+          "target": "drawer",
+          "order": 3
+        },
+        {
+          "id": 4,
+          "action_type": "close",
+          "object": null,
+          "target": "drawer",
+          "order": 4
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "pick_and_place_in",
+          "ketchup",
+          "drawer"
+        ],
+        [
+          "open",
+          null,
+          "drawer"
+        ],
+        [
+          "pick_and_place_in",
+          "ketchup",
+          "drawer"
+        ],
+        [
+          "close",
+          null,
+          "drawer"
+        ]
+      ],
+      "exact_match": false,
+      "judgment": "Partially correct",
+      "failure_types": [
+        "redundant subtask",
+        "wrong order"
+      ],
+      "note": "\"Pick up the ketchup\" was emitted as an extra pick_and_place_in(ketchup, drawer) with the target borrowed from the later clause, and placed before open(drawer). Steps 2-4 alone exactly match the expected plan, but step 1 places into a closed drawer, so the plan is not executable as-is."
+    },
+    {
+      "id": "L7",
+      "input": "First open the drawer, then pick up the ketchup and place it inside before closing it.",
+      "expected": [
+        "open drawer",
+        "pick up ketchup",
+        "place ketchup in drawer",
+        "close drawer"
+      ],
+      "expected_merged": [
+        [
+          "open",
+          null,
+          "drawer"
+        ],
+        [
+          "pick_and_place_in",
+          "ketchup",
+          "drawer"
+        ],
+        [
+          "close",
+          null,
+          "drawer"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\n            \"id\": 1,\n            \"action_type\": \"open\",\n            \"object\": null,\n            \"target\": \"drawer\",\n            \"order\": 1\n        },\n        {\n            \"id\": 2,\n            \"action_type\": \"pick_and_place_in\",\n            \"object\": \"ketchup\",\n            \"target\": \"drawer\",\n            \"order\": 2\n        },\n        {\n            \"id\": 3,\n            \"action_type\": \"close\",\n            \"object\": null,\n            \"target\": \"drawer\",\n            \"order\": 3\n        }\n    ]\n}",
+      "raw_output_provenance": "reconstructed from parsed triples (original text lost)",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "open",
+          "object": null,
+          "target": "drawer",
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "pick_and_place_in",
+          "object": "ketchup",
+          "target": "drawer",
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "close",
+          "object": null,
+          "target": "drawer",
+          "order": 3
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "open",
+          null,
+          "drawer"
+        ],
+        [
+          "pick_and_place_in",
+          "ketchup",
+          "drawer"
+        ],
+        [
+          "close",
+          null,
+          "drawer"
+        ]
+      ],
+      "exact_match": true,
+      "judgment": "Correct",
+      "failure_types": [],
+      "note": ""
+    },
+    {
+      "id": "L8",
+      "input": "Put the ketchup into the drawer only after the drawer has been opened.",
+      "expected": [
+        "open drawer",
+        "pick up ketchup",
+        "place ketchup in drawer"
+      ],
+      "expected_merged": [
+        [
+          "open",
+          null,
+          "drawer"
+        ],
+        [
+          "pick_and_place_in",
+          "ketchup",
+          "drawer"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\n            \"id\": 1,\n            \"action_type\": \"open\",\n            \"object\": null,\n            \"target\": \"drawer\",\n            \"order\": 1\n        },\n        {\n            \"id\": 2,\n            \"action_type\": \"pick_and_place_in\",\n            \"object\": \"ketchup\",\n            \"target\": \"drawer\",\n            \"order\": 2\n        }\n    ]\n}",
+      "raw_output_provenance": "reconstructed from parsed triples (original text lost)",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "open",
+          "object": null,
+          "target": "drawer",
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "pick_and_place_in",
+          "object": "ketchup",
+          "target": "drawer",
+          "order": 2
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "open",
+          null,
+          "drawer"
+        ],
+        [
+          "pick_and_place_in",
+          "ketchup",
+          "drawer"
+        ]
+      ],
+      "exact_match": true,
+      "judgment": "Correct",
+      "failure_types": [],
+      "note": ""
+    },
+    {
+      "id": "L9",
+      "input": "After opening the drawer, pick up the ketchup; once it is inside, close the drawer.",
+      "expected": [
+        "open drawer",
+        "pick up ketchup",
+        "place ketchup in drawer",
+        "close drawer"
+      ],
+      "expected_merged": [
+        [
+          "open",
+          null,
+          "drawer"
+        ],
+        [
+          "pick_and_place_in",
+          "ketchup",
+          "drawer"
+        ],
+        [
+          "close",
+          null,
+          "drawer"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\n            \"id\": 1,\n            \"action_type\": \"open\",\n            \"object\": null,\n            \"target\": \"drawer\",\n            \"order\": 1\n        },\n        {\n            \"id\": 2,\n            \"action_type\": \"pick_and_place_in\",\n            \"object\": \"ketchup\",\n            \"target\": \"drawer\",\n            \"order\": 2\n        },\n        {\n            \"id\": 3,\n            \"action_type\": \"close\",\n            \"object\": null,\n            \"target\": \"drawer\",\n            \"order\": 3\n        }\n    ]\n}",
+      "raw_output_provenance": "reconstructed from parsed triples (original text lost)",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "open",
+          "object": null,
+          "target": "drawer",
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "pick_and_place_in",
+          "object": "ketchup",
+          "target": "drawer",
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "close",
+          "object": null,
+          "target": "drawer",
+          "order": 3
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "open",
+          null,
+          "drawer"
+        ],
+        [
+          "pick_and_place_in",
+          "ketchup",
+          "drawer"
+        ],
+        [
+          "close",
+          null,
+          "drawer"
+        ]
+      ],
+      "exact_match": true,
+      "judgment": "Correct",
+      "failure_types": [],
+      "note": ""
+    },
+    {
+      "id": "L10",
+      "input": "Open the drawer, move the ketchup into it, close the drawer, then pick up the milk and place it in the basket.",
+      "expected": [
+        "open drawer",
+        "pick up ketchup",
+        "place ketchup in drawer",
+        "close drawer",
+        "pick up milk",
+        "place milk in basket"
+      ],
+      "expected_merged": [
+        [
+          "open",
+          null,
+          "drawer"
+        ],
+        [
+          "pick_and_place_in",
+          "ketchup",
+          "drawer"
+        ],
+        [
+          "close",
+          null,
+          "drawer"
+        ],
+        [
+          "pick_and_place_in",
+          "milk",
+          "basket"
+        ]
+      ],
+      "raw_output": "{\n    \"subtasks\": [\n        {\n            \"id\": 1,\n            \"action_type\": \"open\",\n            \"object\": null,\n            \"target\": \"drawer\",\n            \"order\": 1\n        },\n        {\n            \"id\": 2,\n            \"action_type\": \"pick_and_place_in\",\n            \"object\": \"ketchup\",\n            \"target\": \"drawer\",\n            \"order\": 2\n        },\n        {\n            \"id\": 3,\n            \"action_type\": \"close\",\n            \"object\": null,\n            \"target\": \"drawer\",\n            \"order\": 3\n        },\n        {\n            \"id\": 4,\n            \"action_type\": \"pick_and_place_in\",\n            \"object\": \"milk\",\n            \"target\": \"basket\",\n            \"order\": 4\n        }\n    ]\n}",
+      "raw_output_provenance": "reconstructed from parsed triples (original text lost)",
+      "parsed_subtasks": [
+        {
+          "id": 1,
+          "action_type": "open",
+          "object": null,
+          "target": "drawer",
+          "order": 1
+        },
+        {
+          "id": 2,
+          "action_type": "pick_and_place_in",
+          "object": "ketchup",
+          "target": "drawer",
+          "order": 2
+        },
+        {
+          "id": 3,
+          "action_type": "close",
+          "object": null,
+          "target": "drawer",
+          "order": 3
+        },
+        {
+          "id": 4,
+          "action_type": "pick_and_place_in",
+          "object": "milk",
+          "target": "basket",
+          "order": 4
+        }
+      ],
+      "parse_error": null,
+      "predicted_triples": [
+        [
+          "open",
+          null,
+          "drawer"
+        ],
+        [
+          "pick_and_place_in",
+          "ketchup",
+          "drawer"
+        ],
+        [
+          "close",
+          null,
+          "drawer"
+        ],
+        [
+          "pick_and_place_in",
+          "milk",
+          "basket"
+        ]
+      ],
+      "exact_match": true,
+      "judgment": "Correct",
+      "failure_types": [],
+      "note": ""
+    }
+  ]
+}
