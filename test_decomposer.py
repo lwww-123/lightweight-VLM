@@ -5,7 +5,7 @@ decomposer = TaskDecomposer()
 
 
 task = """
- Before closing the drawer, put the mug on the plate and the bowl in the basket.
+Put the mug somewhere appropriate and close the drawer.
 """
 
 
